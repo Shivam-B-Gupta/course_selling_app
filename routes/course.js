@@ -4,12 +4,12 @@ const { purchaseModel, CourseModel } = require('../db');
 const courseRoutes = Router();
 
 courseRoutes.post('/purchase', async function(req, res){
-    const userId = req.userId;
+    const userId = req.body.userId;
     const courseID = req.body.courseID;
 
     await purchaseModel.create({
-        userId: userId,
-        courseID: courseID
+         userId,
+         courseID
     })
     res.json({
         message: "You have successfully bought the course"

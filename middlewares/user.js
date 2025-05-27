@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const {JWT_USER_PASSWORD} = require('../config');
 
 function userMiddleware(req, res, next){
-    const token = req.body.token;
+    const token = req.headers.token;
 
     if(!token){
         return res.status(403).json({mssg: "token missing"})
