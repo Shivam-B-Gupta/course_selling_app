@@ -1,24 +1,44 @@
 const { Router } = require('express')
 const {userModel, CourseModel, purchaseModel} = require('../db')
 const jwt = require('jsonwebtoken')
+const {z} = require('zod')
+const  bcrypt  = require('bcrypt')
 const userRoutes = Router();
 const {JWT_USER_PASSWORD} = require('../config')
 const { userMiddleware } = require('../middlewares/user')
 
 userRoutes.post('/signup', async function (req, res){
+
+    const requiredBody = z.object({
+        email: z.string().min(3).max(100).email(),
+        password: z.string().min(8).max(16),
+        firstname: z.string().min(3).max(15),
+        lastname: z.string().min(3).max(15)
+    })
+
+    const parsedDataWithSuccess = requiredBody.safeParse(req.body);
+
+    if(!parsedDataWithSuccess.success){
+        res.json({
+            mssg: "Incorrect format"
+        })
+    }
+
     const email = req.body.email;
     const password = req.body.password;
     const firstname = req.body.firstname;
     const lastname = req.body.lastname;
 
+    const hashedPassword = await bcrypt.hash(password, 5);
+
     await userModel.create({
         email: email,
-        password: password,
+        password: hashedPassword,
         firstname: firstname,
         lastname: lastname
     })
     res.json({
-        message: "signup endpoint"
+        message: "signup successful"
     })
 })
 
@@ -27,11 +47,19 @@ userRoutes.post('/signin', async function(req, res){
         const password = req.body.password;
     
          const user = await userModel.findOne({
-            email: email,
-            password: password
+            email: email
         })
+
+        if(!user){
+            res.status(403).json({
+                mssg: "user not found in the db"
+            })
+            return
+        }
+
+        const passwordMatch = await bcrypt.compare(password, user.password);
     
-        if(user){
+        if(passwordMatch){
             const token = jwt.sign({
                 id: user.id
             }, JWT_USER_PASSWORD)
